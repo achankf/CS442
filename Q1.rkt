@@ -41,7 +41,6 @@
 
 (define (evalTerm term)
   (let ([fixedTerm (wrapSingleTermAsList term)])
-    (cond
       [(match (first fixedTerm)
          ['zero (list 'zero)]
          ['true (list 'true)]
@@ -50,7 +49,7 @@
          ['succ (handleNv fixedTerm)]
          ['iszero (handleIsZero fixedTerm)]
          [_ (error "evalTerm: unreachable")])]
-      )))
+      ))
 
 (define (uae-eval term)
   (evalTerm term))
