@@ -13,3 +13,6 @@ fst = lambda p . p tru;
 snd = lambda p . p fls;
 
 combinators -- closed term; no free variable
+
+variable capture -- free variable in a term becomes a bound variable
+alpha-conversion -- rename bound variables in lambda bound terms
