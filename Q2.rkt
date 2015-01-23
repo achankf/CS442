@@ -22,22 +22,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;; lc-cbv-eval
 
+; we go deep into a term, and either:
+;   1) map replaces all "terminals" that equal to "target" to the term "by"
+;   2) go deeper when we see an abstraction
+;   3) or stop going deeper when we see [x->s](λ y t1) -> (λ y t1) when x=y... to avoid replacing bound variables
 (define (recursive-replace target by list)
+  ;(printf ">>>~a ~a ~a\n" target by list)
   (map 
    (lambda (x)
      (cond 
        [(equal? x target) by]
-       [(list? x) (recursive-replace target by x)]
+       [(list? x)
+        (match x
+          [(list 'λ xx tt)
+           (cond
+             [(equal? target xx) x]
+             [else (recursive-replace target by x)])]
+          [_ (recursive-replace target by x)])]
        [else x])) list))
-
-(define (substitute-lambda parentX x1 t1 by)
-  (match t1
-    [(list 'λ x2 t2) 
-     (cond
-       [(equal? parentX x1) t1]
-       [else (substitute t1 by)]
-       )]
-    ))
 
 ; note: t2 is already simplified; t1 might not
 ; substitute t2 into t1
@@ -46,11 +48,11 @@
     [(list 'λ v t) 
      (match t
        [(? symbol?) t2]
-       [(list 'λ xx tt) ;(substitute-lambda v xx tt t2)]
+       [(list 'λ xx tt)
         (cond
           [(equal? v xx) t]
           [else (recursive-replace v t2 t)])]
-       [(list _ _) (printf "c\n") (lc-cbv-eval (recursive-replace v t2 t))] ; needs to be re-evaulated because we may apply further reduction after application
+       [(list _ _) (lc-cbv-eval (recursive-replace v t2 t))] ; needs to be re-evaulated because we may apply further reduction after application
        )]
     [(list t1left t1right) (substitute (substitute t1left t1right) t2)] ; left-hand-side is an application -- needs lots of simplification
     )
@@ -59,7 +61,7 @@
 (define (lc-cbv-eval term)
   (match term
     [(list 'λ _ _) term] ; base case -- in normal form; don't touch
-    [(list t1 t2)  (substitute t1 (lc-cbv-eval t2))] ; case 2: application; also, don't touch t1 for now
+    [(list t1 t2) (substitute t1 (lc-cbv-eval t2))] ; case 2: application; also, don't touch t1 for now
     ))
 
 ; simple test method
@@ -85,6 +87,11 @@
 (test (lc-cbv-eval '((λ x (λ a (a a))) ((λ z z) (λ b b)))) '(λ a (a a)))
 (test (lc-cbv-eval '((λ x x) ((λ x x) (λ z ((λ x x) z))))) '(λ z ((λ x x) z)))
 (test (lc-cbv-eval '((λ x (λ x (λ x x))) (λ x x))) '(λ x (λ x x)))
+(test (lc-cbv-eval '((λ x (λ y (λ x x))) (λ z z))) '(λ y (λ x x)))
+(test (lc-cbv-eval '((λ x (λ x (λ x x))) (λ z z))) '(λ x (λ x x)))
+(test (lc-cbv-eval '((λ x (λ y (λ x (λ y y)))) (λ z z))) '(λ y (λ x (λ y y))))
+(test (lc-cbv-eval '((λ x (λ y (λ x (λ x x)))) (λ z z))) '(λ y (λ x (λ x x))))
+(test (lc-cbv-eval '((λ x (λ y (λ x (x x)))) (λ z z))) '(λ y (λ x (x x))))
 
 ; test cases for closed?
 (test (closed? 'x) #f)
