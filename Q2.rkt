@@ -30,16 +30,27 @@
        [(list? x) (recursive-replace target by x)]
        [else x])) list))
 
+(define (substitute-lambda parentX x1 t1 by)
+  (match t1
+    [(list 'λ x2 t2) 
+     (cond
+       [(equal? parentX x1) t1]
+       [else (substitute t1 by)]
+       )]
+    ))
+
 ; note: t2 is already simplified; t1 might not
 ; substitute t2 into t1
 (define (substitute t1 t2)
-  ;(printf "sub: t1:~a t2:~a\n" t1 t2)
   (match t1
     [(list 'λ v t) 
      (match t
        [(? symbol?) t2]
-       [(list 'λ _ _) (recursive-replace v t2 t)]
-       [(list _ _) (lc-cbv-eval (recursive-replace v t2 t))] ; needs to be re-evaulated because we may apply further reduction after application
+       [(list 'λ xx tt) ;(substitute-lambda v xx tt t2)]
+        (cond
+          [(equal? v xx) t]
+          [else (recursive-replace v t2 t)])]
+       [(list _ _) (printf "c\n") (lc-cbv-eval (recursive-replace v t2 t))] ; needs to be re-evaulated because we may apply further reduction after application
        )]
     [(list t1left t1right) (substitute (substitute t1left t1right) t2)] ; left-hand-side is an application -- needs lots of simplification
     )
@@ -72,8 +83,8 @@
 (test (lc-cbv-eval '((λ x (λ a (x x))) (λ y ((λ z y) (λ z y))))) '(λ a ((λ y ((λ z y) (λ z y))) (λ y ((λ z y) (λ z y))))))
 (test (lc-cbv-eval '((λ x (λ a (x x))) ((λ z z) (λ b b)))) '(λ a ((λ b b) (λ b b))))
 (test (lc-cbv-eval '((λ x (λ a (a a))) ((λ z z) (λ b b)))) '(λ a (a a)))
-
-(lc-cbv-eval '((λ y ((λ a y) (λ a y))) (λ z z)))
+(test (lc-cbv-eval '((λ x x) ((λ x x) (λ z ((λ x x) z))))) '(λ z ((λ x x) z)))
+(test (lc-cbv-eval '((λ x (λ x (λ x x))) (λ x x))) '(λ x (λ x x)))
 
 ; test cases for closed?
 (test (closed? 'x) #f)
