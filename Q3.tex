@@ -16,6 +16,37 @@ According to 5.3.8's solution, the big-step semantics is the following:
 \end{align*}
 
 Now for Q3:
+\begin{lemma}
+\label{lemma:E-APP1}
+If $t_1 \rightarrow^* \lambda x . t_{12}$, then $t_1t_2 \rightarrow^* (\lambda x . t_{12}) t_2$.
+\end{lemma}
+\begin{proof}
+By induction on the derivation.
+\begin{itemize}
+\item
+Case 0 step:
+In other words, $t_1 \rightarrow \lambda x . t_{12}$.
+Thus, E-APP1 can be applied.
+\item
+Case $k$ step:
+First, note that $k$ is finite, because $t_1 \rightarrow^* \lambda x . t_{12}$ evaluates $t_1$ to a normal form (hence, evaluation stops).
+Moreover, by reflexivity, there exists a sequence for the derivation of $t_1$.
+\begin{align*}
+t_1 \equiv t_{k1} \rightarrow t_{k2} \rightarrow t_{k3} \rightarrow \cdots \rightarrow t_{k(k-1)} \rightarrow \lambda x . t_{12} \equiv t_{kk}
+\end{align*}
+\end{itemize}
+Note: the $k$ in $t_{k1}$ is there to avoid name clash, since we already used $t_2$ for other purposes.
+
+Thus, we can repeatedly apply E-APP1 to get $(\lambda x . t_{12}) t_2$, as required.
+\end{proof}
+\begin{lemma}
+\label{lemma:E-APP2}
+If $t_2 \rightarrow^* v_2$, then $(\lambda x . t_{12}) t_2 \rightarrow^* v_2$.
+\end{lemma}
+\begin{proof}
+By induction on the derivation; similar to lemma \ref{lemma:E-APP1}.
+\end{proof}
+
 \begin{claim}
 (Forward direction) If $t \Downarrow v$, then $t \rightarrow^* v$.
 \end{claim}
@@ -40,8 +71,8 @@ $[x \mapsto v_2] t_{12} \rightarrow^* v$
 Hence, we can evaluate a few steps of $t_1t_2$.
 \begin{align*}
 & t_1t_2 & \text{(Given)} \\
-\rightarrow^* & (\lambda x . t_{12}) t_2 & \text{(by 1)}\\
-\rightarrow^* & (\lambda x . t_{12}) v_2 & \text{(by 2)}\\
+\rightarrow^* & (\lambda x . t_{12}) t_2 & \text{(by 1 and lemma \ref{lemma:E-APP1})}\\
+\rightarrow^* & (\lambda x . t_{12}) v_2 & \text{(by 2 and lemma \ref{lemma:E-APP2})}\\
 \rightarrow & [x \mapsto v_2] t_{12} & \text{(by substitution)} \\
 \rightarrow^* & v & \text{(by 3)}
 \end{align*}
@@ -78,6 +109,7 @@ Since $t \rightarrow^* v$, so $t_1$ must also has a normal form, say, $t_1 \righ
 With $t_1$ evaluated to a value, case E-APP2 above follows.
 Again, $t_1$'s evaluation sequence is shorter than that of $t$.
 \end{itemize}
+As required.
 \end{proof}
 
 \begin{claim}
@@ -88,7 +120,7 @@ By induction on the numerber of steps of small-step evaluation in the given deri
 \begin{itemize}
 \item
 Case 0 steps:
-This means $t$ is an abstraction, so $t = \lambda x . t_1$, which follows by B-Value.
+This means $t$ is an abstraction, so $t = \lambda x . t_1$, which follows by B-Value, and we get $t \Downarrow v$.
 \item
 Case multiple steps:
 This means $t$ can only be an application, so $t = t_1t_2$.
@@ -102,6 +134,7 @@ $t_1 \Downarrow^* v_2$
 $[x \mapsto v_2] t_{12} \Downarrow^* v$
 \end{itemize}
 Finally, B-APP can be applied.
+We get $t \Downarrow v$.
 \end{itemize}
 \end{proof}
 Now, we sandwich both claims together and we get the proof for Q3.
