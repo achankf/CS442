@@ -40,9 +40,9 @@ $[x \mapsto v_2] t_{12} \rightarrow^* v$
 Hence, we can evaluate a few steps of $t_1t_2$.
 \begin{align*}
 & t_1t_2 & \text{(Given)} \\
-\rightarrow^* & (\lambda x . t_{12}) t_2 & \text{(by 1, $t_1$ has a normal form, and by E-APP1)} \\
-\rightarrow^* & (\lambda x . t_{12}) v_2 & \text{(by 2, $t_2$ has a normal form, and by E-APP2)} \\
-\rightarrow^* & [x \mapsto v_2] t_{12} & \text{(by substitution)} \\
+\rightarrow^* & (\lambda x . t_{12}) t_2 & \text{(by 1)}\\
+\rightarrow^* & (\lambda x . t_{12}) v_2 & \text{(by 2)}\\
+\rightarrow & [x \mapsto v_2] t_{12} & \text{(by substitution)} \\
 \rightarrow^* & v & \text{(by 3)}
 \end{align*}
 In other words, $t_1t_2 \rightarrow^* v$.
@@ -53,7 +53,7 @@ As required.
 \begin{lemma}
 \label{lemma:recover}
 If $t = t_1t_2 \rightarrow^* v$, then $t_1 \rightarrow^* \lambda x . t_{12}$, $t_2 \rightarrow^* v_2$, and $[x \mapsto v_2] t_{12} \rightarrow^* v$.
-The length of evaluation sequences for $t_1$ and $t_2$ must be strictly less than that of $t$, with the exception of substitution, whose evaluation sequence be as long as that of $t$.
+The length of evaluation sequences for $t_1$, $t_2$, and the substitution must be strictly less than that of $t$.
 \end{lemma}
 \begin{proof}
 By induction on the length of the evaluation sequence.
@@ -61,6 +61,8 @@ Since the given term is an application, the length must be at least 1.
 \begin{itemize}
 \item
 With $t_1$ and $t_2$ in normal form, by inductive hypothesis, in order to get $v$, substitution must be applied, i.e. $[x \mapsto v_2] t_{12} \rightarrow^* v$.
+Both $t_1$ and $t_2$ cannot be reduced further, but there are still more evaluation steps due to substitution.
+Also, the substitution's evaluation sequence must be strictly shorter than that of $t$, because $[x \mapsto v_2] t_{12}$ has to be reduced from $(\lambda x . t_{12}) v_2$.
 \item
 Case E-APP2:
 By induction hypothesis, $t_1$ is in normal form.
