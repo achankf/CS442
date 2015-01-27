@@ -1,0 +1,107 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{ulem}
+\usepackage{fancyvrb}
+\usepackage{url}
+\usepackage{thm}
+\title{CS442 Section 001 Question 3}
+
+\begin{document}
+\maketitle
+
+According to 5.3.8's solution, the big-step semantics is the following:
+\begin{align*}
+& \lambda x . t \Downarrow \lambda x . t & \text{(B-Value)} \\
+& \frac{t_1 \Downarrow \lambda x . t_{12} \;\;\;\; t_2 \Downarrow v_2 \;\;\;\; [x \mapsto v_2] t_{12} \Downarrow v} {t_1t_2 \Downarrow v} & \text{(B-App)}
+\end{align*}
+
+Now for Q3:
+\begin{claim}
+(Forward direction) If $t \Downarrow v$, then $t \rightarrow^* v$.
+\end{claim}
+\begin{proof}
+By induction on $t \Downarrow v$.
+\begin{itemize}
+\item
+Case B-Value:
+Term is an abstraction.
+By the transitive definition, $\lambda x . t \rightarrow \lambda x . t$, and hence $t \rightarrow^* v$.
+\item
+Case B-App: 
+By inductive hypothesis, we have
+\begin{enumerate}
+\item
+$t_1 \rightarrow^* \lambda x . t_{12}$
+\item
+$t_2 \rightarrow^* v_2$
+\item
+$[x \mapsto v_2] t_{12} \rightarrow^* v$
+\end{enumerate}
+Hence, we can evaluate a few steps of $t_1t_2$.
+\begin{align*}
+& t_1t_2 & \text{(Given)} \\
+\rightarrow^* & (\lambda x . t_{12}) t_2 & \text{(by 1, $t_1$ has a normal form, and by E-APP1)} \\
+\rightarrow^* & (\lambda x . t_{12}) v_2 & \text{(by 2, $t_2$ has a normal form, and by E-APP2)} \\
+\rightarrow^* & [x \mapsto v_2] t_{12} & \text{(by substitution)} \\
+\rightarrow^* & v & \text{(by 3)}
+\end{align*}
+In other words, $t_1t_2 \rightarrow^* v$.
+\end{itemize}
+As required.
+\end{proof}
+
+\begin{lemma}
+\label{lemma:recover}
+If $t = t_1t_2 \rightarrow^* v$, then $t_1 \rightarrow^* \lambda x . t_{12}$, $t_2 \rightarrow^* v_2$, and $[x \mapsto v_2] t_{12} \rightarrow^* v$.
+The length of evaluation sequences for $t_1$ and $t_2$ must be strictly less than that of $t$, with the exception of substitution, whose evaluation sequence be as long as that of $t$.
+\end{lemma}
+\begin{proof}
+By induction on the length of the evaluation sequence.
+Since the given term is an application, the length must be at least 1.
+\begin{itemize}
+\item
+With $t_1$ and $t_2$ in normal form, by inductive hypothesis, in order to get $v$, substitution must be applied, i.e. $[x \mapsto v_2] t_{12} \rightarrow^* v$.
+\item
+Case E-APP2:
+By induction hypothesis, $t_1$ is in normal form.
+Since $t \rightarrow^* v$, so $t_2$ must also has a normal form, say, $t_2 \rightarrow^* v_2$.
+Notice $t_2$ cannot be a variable, since $t \rightarrow^* v$, or we will be stuck.
+With $t_2$ evaluated to a value, substitution above follows.
+Since, we still need to do substitution in the end, so $t_2$'s evaluation sequence is strictly shorter than that of $t$.
+\item
+Case E-APP1:
+By induction hypothesis, $t_1$ is {\bf not} in normal form.
+Then, $t_1$ can only be an application, because if $t_1$ is a variable the evaluation will be stuck.
+Since $t \rightarrow^* v$, so $t_1$ must also has a normal form, say, $t_1 \rightarrow^* \lambda x.t_{12}$.
+With $t_1$ evaluated to a value, case E-APP2 above follows.
+Again, $t_1$'s evaluation sequence is shorter than that of $t$.
+\end{itemize}
+\end{proof}
+
+\begin{claim}
+(Backward direction) If $t \rightarrow^* v$, then $t \Downarrow v$.
+\end{claim}
+\begin{proof}
+By induction on the numerber of steps of small-step evaluation in the given derivation of $t \rightarrow^* v$.
+\begin{itemize}
+\item
+Case 0 steps:
+This means $t$ is an abstraction, so $t = \lambda x . t_1$, which follows by B-Value.
+\item
+Case multiple steps:
+This means $t$ can only be an application, so $t = t_1t_2$.
+Since the $\rightarrow^*$ variants make the evaluation seqence shorter (lemma \ref{lemma:recover}), induction hypothesis can be applied.
+\begin{itemize}
+\item
+$t_1 \Downarrow^* \lambda x . t_{12}$
+\item
+$t_1 \Downarrow^* v_2$
+\item
+$[x \mapsto v_2] t_{12} \Downarrow^* v$
+\end{itemize}
+Finally, B-APP can be applied.
+\end{itemize}
+\end{proof}
+Now, we sandwich both claims together and we get the proof for Q3.
+\done
+\end{document}
