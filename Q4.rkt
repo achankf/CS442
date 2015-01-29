@@ -7,24 +7,22 @@
     (printf "search: env:~a key:~a found:~a\n" env key found)
     (second found)))
 
-(define (handleApplication t1closure t2closure env)
-  (printf "handleApplication:\n|\tt1closure:~a\n|\tt2closure~a\nL\tenv:~a\n" t1closure t2closure env)
-  (let ([t1abs (closure-abs t1closure)]
-        [t2abs (closure-abs t2closure)])
-    (match t1abs
-      ; build up the environment and let evaluate() does the substitution from env, if t is a value
-      [(list 'λ x t) (evaluate t (cons (list x t2abs) env))])))
+(define (handleApplication t1closure t2closure)
+  (printf "handleApplication:\n|\tt1closure:~a\n|\tt2closure~a\n" t1closure t2closure)
+    (match (closure-abs t1closure)
+      [(list 'λ x t) (evaluate t (cons (list x t2closure) (closure-env t1closure)))]
+      ))
 
-; returns closure objects
+; "helper" that does the actual computation
 (define (evaluate exp env)
-  (printf "evaluate:\n|\texp:~a\nL\tenv:~a\n" exp env)
+  (printf "evaluate:\n|\texp:~a\n|\tenv:~a\n" exp env)
   (match exp
-    [(? symbol?) (evaluate (search exp env) empty)] ; base case -- value; throw out the environment
-    [(list 'λ _ _) (closure exp env)]
-    [(list t1 t2)
+    [(? symbol?) (search exp env)] ; base case -- value
+    [(list 'λ _ _) (closure exp env)] ; abstraction -- don't go further, stop here...
+    [(list t1 t2) ; application
      (let ([t1closure (evaluate t1 env)]
            [t2closure (evaluate t2 env)])
-       (handleApplication t1closure t2closure env))]
+       (handleApplication t1closure t2closure))] ; semantics say that t1closure's env will be used instead
     )
   )
 
@@ -62,19 +60,23 @@
 (test (reduce '((λ x x) ((λ y y) (λ z z)))) (value '(λ z z)))
 (test (reduce '((λ y y) (λ z z))) (value '(λ z z)))
 (test (reduce '((λ y (y y)) (λ z z))) (value '(λ z z)))
-(test (reduce '((λ x (λ a x)) (λ y y))) (closure '(λ a x) (list '(x (λ y y)))))
-(test (reduce '((λ x (λ a a)) (λ y y))) (closure '(λ a a) '((x (λ y y)))))
+(test (reduce '((λ x (λ a x)) (λ y y))) (closure '(λ a x) (list (list 'x (closure '(λ y y) '())))))
+(test (reduce '((λ x (λ a a)) (λ y y))) (closure '(λ a a) (list (list 'x (closure '(λ y y) '())))))
 (test (reduce '(((λ x x) (λ x x)) (λ x x))) (value '(λ x x)))
-(test (reduce '((λ x (λ a (x x))) (λ y y))) (closure '(λ a (x x)) (list '(x (λ y y)))))
-(test (reduce '((λ x (λ a (x x))) (λ y ((λ z y) (λ z y))))) (closure '(λ a (x x)) (list '(x (λ y ((λ z y) (λ z y)))))))
-(test (reduce '((λ x (λ a (x x))) ((λ z z) (λ b b)))) (closure '(λ a (x x)) (list '(x (λ b b)))))
-(test (reduce '((λ x (λ a (a a))) ((λ z z) (λ b b)))) (closure '(λ a (a a)) (list '(x (λ b b)))))
+(test (reduce '((λ x (λ a (x x))) (λ y y))) (closure '(λ a (x x)) (list (list 'x (closure '(λ y y) '())))))
+(test (reduce '((λ x (λ a (x x))) (λ y ((λ z y) (λ z y))))) (closure '(λ a (x x)) (list (list 'x (closure '(λ y ((λ z y) (λ z y))) '())))))
+(test (reduce '((λ x (λ a (x x))) ((λ z z) (λ b b)))) (closure '(λ a (x x)) (list (list 'x (closure '(λ b b) '())))))
+(test (reduce '((λ x (λ a (a a))) ((λ z z) (λ b b)))) (closure '(λ a (a a)) (list (list 'x (closure '(λ b b) '())))))
 (test (reduce '((λ x x) ((λ x x) (λ z ((λ x x) z))))) (value '(λ z ((λ x x) z))))
-(test (reduce '((λ x (λ x (λ x x))) (λ x x))) (closure '(λ x (λ x x)) (list '(x (λ x x)))))
-(test (reduce '((λ x (λ y (λ x x))) (λ z z))) (closure '(λ y (λ x x)) (list '(x (λ z z)))))
-(test (reduce '((λ x (λ x (λ x x))) (λ z z))) (closure '(λ x (λ x x)) (list '(x (λ z z)))))
-(test (reduce '((λ x (λ y (λ x (λ y y)))) (λ z z))) (closure '(λ y (λ x (λ y y))) (list '(x (λ z z)))))
-(test (reduce '((λ x (λ y (λ x (λ x x)))) (λ z z))) (closure '(λ y (λ x (λ x x))) (list '(x (λ z z)))))
-(test (reduce '((λ x (λ y (λ x (x x)))) (λ z z))) (closure '(λ y (λ x (x x))) (list '(x (λ z z)))))
+(test (reduce '((λ x (λ x (λ x x))) (λ x x))) (closure '(λ x (λ x x)) (list (list 'x (closure '(λ x x) '())))))
+(test (reduce '((λ x (λ y (λ x x))) (λ z z))) (closure '(λ y (λ x x)) (list (list 'x (closure '(λ z z) '())))))
+(test (reduce '((λ x (λ x (λ x x))) (λ z z))) (closure '(λ x (λ x x)) (list (list 'x (closure '(λ z z) '())))))
+(test (reduce '((λ x (λ y (λ x (λ y y)))) (λ z z))) (closure '(λ y (λ x (λ y y))) (list (list 'x (closure '(λ z z) '())))))
+(test (reduce '((λ x (λ y (λ x (λ x x)))) (λ z z))) (closure '(λ y (λ x (λ x x))) (list (list 'x (closure '(λ z z) '())))))
+(test (reduce '((λ x (λ y (λ x (x x)))) (λ z z))) (closure '(λ y (λ x (x x))) (list (list 'x (closure '(λ z z) '())))))
 
-(test (evaluate '((λ x (x x)) x) (list '(x (λ y y)))) (value '(λ y y)))
+(test (evaluate '((λ x (x x)) x) (list (list 'x (closure '(λ y y) '())))) (value '(λ y y)))
+
+(test (reduce '((λ x (λ y (λ x (x x)))) (λ z z))) (closure '(λ y (λ x (x x))) (list (list 'x (closure '(λ z z) '())))))
+(test (reduce '(((λ x (λ y (λ x (x x)))) (λ z z)) (λ a a))) (closure '(λ x (x x)) (list (list 'y (closure '(λ a a) '())) (list 'x (closure '(λ z z) '())))))
+(test (reduce '((((λ x (λ y (λ x (x x)))) (λ z z)) (λ a a)) (λ b b))) (closure '(λ b b) '()))
