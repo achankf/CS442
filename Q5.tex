@@ -1,0 +1,80 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{ulem}
+\usepackage{fancyvrb}
+\usepackage{url}
+\usepackage{thm}
+\title{CS442 Section 001 Question 5}
+
+\begin{document}
+\maketitle
+
+\section{Explaining the ``Why?"}
+
+Theorem 3.5.4 does not hold because the evaluation rules $[S-L]$ and $[S-R]$ are ambiguous.
+Namely, we can choose either one to evaluate $t_1 \oplus t_2$, because both rules only expect 2 terms ($t$).
+
+\section{Proof for the required statement}
+
+First, we begin with a lemma.
+\begin{lemma}
+\label{lemma:diamond}
+Diamond property.
+Namely, if $r \rightarrow s$ and $r \rightarrow t$, with $s \neq t$, then there is some term $u$ such that $s \rightarrow u$ and $t \rightarrow u$.
+\end{lemma}
+\begin{proof}
+Let's do induction on the derivation of $t$.
+\begin{itemize}
+\item
+Case $[S-P]$:
+Not applicable because $n_1 + n_2$ is a value.
+\item
+Case $[S-L]$:
+Since $t$ must have the form $t_1 \oplus t_2$,
+we know that the 2 derivations, $s$ and $t$, must have the form
+\begin{align}
+t'_1 \oplus t_2 \text{ and } t''_1 \oplus t_2
+\end{align}
+, respectively, where $t \rightarrow t'_1$ and $t \rightarrow t''_1$.
+Since $t'_1$ and $t''_1$ are sub-terms of $t$, the inductive hypothesis applies.
+Namely, for some $t'''_1$,
+\begin{align}
+t'_1 \rightarrow t'''_1 \text{ and } t''_1 \rightarrow t'''_1
+\end{align}
+Thus, from either $s$ or $t$, we can apply $[S-L]$ again to get $u = t'''_1 \oplus t_2$.
+Hence, $s \rightarrow u$ and $t \rightarrow u$.
+\item
+Case $[S-R]$:
+Symmetric argument to $[S-L]$, for $t_2$ instead.
+\end{itemize}
+As required.
+\end{proof}
+Now, we prove the main statement.
+\begin{claim}
+If $t \rightarrow^* n_1$ and $t \rightarrow^* n_2$, then $n_1 = n_2$.
+\end{claim}
+\begin{proof}
+By induction of the length of derivation:
+\begin{itemize}
+\item
+Case length 0 ($value$):
+Automatically holds because $n \rightarrow^* n$ by definition of $\rightarrow^*$.
+\item
+Case length 1 ($[S-P]$):
+Also automatically hold due to having a small step in this case; hence, lemma \ref{lemma:diamond} follows.
+\item
+Case length $> 1$ ($[S-L]$ or $[S-R]$):
+We have $t \rightarrow^* n_1$ and $t \rightarrow^* n_2$.
+Consider the next derivation of $t$, say $t \rightarrow t'_1$ and $t \rightarrow t''_1$, assuming $t'_1 \neq t''_1$.
+Lemma \ref{lemma:diamond} can be applied, which we have $t \rightarrow^* u_1$.
+Thus, we have a ``checkpoint" (I think of this like a database checkpoint), and we can discard $t$ and continue the evaluation from $u_1$.
+Then, we can repeat the process until we get a number, i.e. in normal form.
+In particular,
+\begin{align}
+& t \rightarrow^* u_1 \rightarrow^* \cdots \rightarrow^* u_{k-1} \rightarrow s_1 \rightarrow n_1 \\
+\text{and } & t \rightarrow^* u_1 \rightarrow^* \cdots \rightarrow^* u_{k-1} \rightarrow s_2 \rightarrow n_2
+\end{align}
+Finally, we apply lemma \ref{lemma:diamond} on $u_{k-1} \rightarrow s_1$ and on $u_{k-1} \rightarrow s_2$ in order to deduce that $n_1 = n_2$.
+\end{itemize}
+\end{proof}
+\end{document}

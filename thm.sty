@@ -3,14 +3,24 @@
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
 \DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
 \newtheorem{thm}{Theorem}
+\let\oldthm\thm
+\renewcommand{\thm}{\oldthm\normalfont}
 \newtheorem{lemma}[thm]{Lemma}
+\let\oldlemma\lemma
+\renewcommand{\lemma}{\oldlemma\normalfont}
 \newtheorem{claim}[thm]{Claim}
+\let\oldclaim\claim
+\renewcommand{\claim}{\oldclaim\normalfont}
 \newtheorem{coro}[thm]{Corollary}
+\let\oldcoro\coro
+\renewcommand{\coro}{\oldcoro\normalfont}
 \newtheorem{magic}[thm]{Magic}
+\let\oldmagic\magic
+\renewcommand{\magic}{\oldmagic\normalfont}
 \newtheorem{defn}[thm]{Definition}
+\let\olddefn\defn
+\renewcommand{\defn}{\olddefn\normalfont}
 \newcommand{\done}[0]{\hfill\ensuremath{\blacksquare}}
-\newtheorem{design}[thm]{Design}
-\newtheorem{bug}[thm]{Bug}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
