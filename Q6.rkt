@@ -16,7 +16,9 @@
   (match sx
     [`(with ,vars ,exp) (closure (parse exp) vars)]
     [`(if ,exp ,texp ,fexp) (iff (parse exp) (parse texp) (parse fexp))]
-    [`(fun ,args ,bdy) (fun args (parse bdy))]
+    [`(fun ,args ,bdy) 
+     (cond [(not (equal? (length (remove-duplicates args)) (length args))) (error "duplicate")])
+     (fun args (parse bdy))]
     
     ; unary operators
     [`(mt? ,exp) (un-op 'mt? (parse exp))]
@@ -98,9 +100,12 @@
     [(app fun-exp arg-exp)
      (match (interp fun-exp env)
        [(closure (fun param body) cl-env)
+        (cond [(not (equal? (length param) (length arg-exp))) (error "wrong number")])
         ; since functions now have multiple parameters, so create an env for the paramaters and then append it to the closure's env
         (let ([param-env (zip param (map (lambda (exp) (interp exp env)) arg-exp))])
-          (interp body (append param-env cl-env)))])]
+          (interp body (append param-env cl-env)))]
+       [_ (error "not a function")]
+       )]
     [x (second (assoc x env))]))
 
 ;; please comment out or change the name of this function in
@@ -156,6 +161,11 @@
 (check-expect (interp (parse '(if tru (rst (kons 99 (kons 99 mt))) 435)) '()) '(kons 99 mt))
 (check-expect (interp (parse '(if fls 123 (+ (* 3 9) (/ 2 (- 3 1))))) '()) 28)
 
+; app
+
+(check-expect (interp (parse '((fun (a b c d e f g) (kons a (kons b (kons c (kons d (kons e (kons f (kons g mt))))))))
+                               123 tru fls 5 65 7 9)) '())
+              '(kons 123 (kons tru (kons fls (kons 5 (kons 65 (kons 7 (kons 9 mt))))))))
 
 ; others
 (check-expect (parse '(fun (x y) x)) (fun '(x y) 'x))
