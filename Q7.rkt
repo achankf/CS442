@@ -9,36 +9,39 @@
            ;; test whether an application, separated by left and right, is reducible.
            [app-reducible?
             (lambda(left right)
-              (or 
+              ;(printf "expr:~a parents:~a\n" expr parents)
+              (or
                (match left
                  [`(λ ,_ ,_) #t]
-                 [`(,left ,right) (app-reducible? left right)]
+                 [`(,t1 ,t2) (app-reducible? t1 t2)]
                  [_ #f])
                (match right
                  [`(λ ,_ ,term) (reducible? term)]
-                 [`(,left ,right) (app-reducible? left right)]
+                 [`(,t1 ,t2) (app-reducible? t1 t2)]
                  [_ #f])
-               ))])
+               ))
+            ])
     ;(printf "reducible? ~a\n" expr)
     (match expr
       ;; unlike call-by-value, we need to reduce "things" inside an abstraction
       [`(λ ,var ,term) (reducible? term)]
       [`(,left ,right) (app-reducible? left right)]
       ;; cannot reduce a variable further
-      [var #f]
+      [_ #f]
       )
     ))
 
 (define (reduce expr)
   ;(printf "reduce expr:~a\n" expr)
+  ;(printf ">>>>> ~a parents:~a\n" expr parents)
   (match expr
     [`(λ ,var ,term) `(λ ,var ,(reduce term))]
+    [`((λ ,var ,term) ,t2) (subst var t2 term)]
     [`(,t1 ,t2)
-     (match (reduce t1)
-       [`(λ ,var ,term) (subst var t2 (reduce term))]
-       [_ `(,t1 ,(reduce t2))])
-     ]
-    [var var]
+     ;; at least one term must be reducible, because normalize guarantees that
+     (if (reducible? t1) 
+         `(,(reduce t1) ,t2)
+         `(,t1 ,(reduce t2)))]
     )
   )
 
@@ -70,7 +73,7 @@
 
 ;; Perform substitution based on page 71's substituion rule
 (define (subst x N M)
-  ;(printf "subst x:~a N:~a M:~a non-free:~a\n" x N M non-free)
+  ;(printf "subst x:~a N:~a M:~a \n" x N M)
   (match M
     [`(λ ,var ,term)
      ;; alpha convert every abstraction, so that the condition (y not equals x and y not in FV(s)) holds
@@ -83,7 +86,6 @@
     ))
 
 (define (normalize expr)
-  ;(printf "normalize expr:~a\n" expr)
   (if (reducible? expr) (normalize (reduce expr)) expr))
 
 ;;; test cases
@@ -94,6 +96,11 @@
 ;(check-expect (subst 'x 'z '(λ y x)) '(λ 0 z))
 ;(check-expect (subst 'x 'z '(λ y y)) '(λ 0 0))
 ;(check-expect (subst 'x 'z '(λ y (λ z x))) '(λ 0 (λ 1 z)))
+;
+;(reducible? '((λ x (x x)) (λ x (x x))))
+;(reducible?  '(λ _v_21044 ((q _v_21044) ((λ a x) (λ a x)))))
+;(reducible? '((λ x (y z)) ((λ x (x x)) (λ x (x x)))))
+;(reducible? '((λ x (y z)) ((λ x (x x)) (λ x (x x)))))
 ;
 ;(check-expect (subst 'x 'z '(((λ y (λ z (λ a a))) (λ y (λ z (λ c z)))) ((λ y (λ z (λ z z))) (λ y (λ z (λ z z))))))
 ;              '(((λ 0 (λ 1 (λ 2 2))) (λ 0 (λ 1 (λ 2 1)))) ((λ 0 (λ 1 (λ 2 2))) (λ 0 (λ 1 (λ 2 2))))))
@@ -147,4 +154,20 @@
 ;(normalize '((λ z (λ x (z z))) (λ y ((x y) z))))
 ;(normalize '((λ y ((x y) z)) (λ y ((x y) z))))
 ;(normalize '(λ y ((x y) z)))
+
+;(normalize '((λ w (λ x ((λ z y) w))) ((λ x x) ((λ x (x x)) (λ x (x x))))))
+(check-expect (normalize '((λ x (y z)) ((λ x (x x)) (λ x (x x))))) '(y z))
+;(normalize '((λ x (λ x ((x y) z))) ((λ x (x x)) (λ x (x x)))))
+(check-expect (normalize '((λ a (λ b (z b) a)) z)) '(λ b (z b) a))
+;(normalize '((λ a (λ b ((q b) a))) ((λ a x) (λ a x))))
+
+;; make sure the following don't terminates
+;(normalize '((λ w (λ x ((x y) w))) ((λ x (x x)) (λ x (x x)))))
+;(normalize '((λ w (λ x ((x y) w))) ((λ x (x x)) (λ x (x x)))))
+;(normalize '((λ w (λ x ((z y) w))) ((λ x (x x)) (λ x (x x)))))
+;(normalize '((λ w (λ x ((λ z y) w))) ((λ x (x x)) (λ x (x x)))))
+;(normalize '((λ x (y x)) ((λ x (x x)) (λ x (x x)))))
+;(normalize '(y ((λ x (x x)) (λ x (x x)))))
+;(normalize '((λ x (x x)) (λ x (x x))))
+
 (test)
