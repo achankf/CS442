@@ -52,7 +52,7 @@ let typeExpr expr =
 				let xType = typeExprHelper x env in
 				(match fType with
 					| T_Fun (argType, retType) -> if xType = argType then retType else raise (Fail "mismatch")
-					| _ -> raise (Fail "mismatch")
+					| _ -> raise (Fail "not function")
 				)
 		| Var x ->
 				try
@@ -65,6 +65,8 @@ let typeExpr expr =
 					| Not_found -> raise (Fail "not bound")
 	in typeExprHelper expr []
 ;;
+
+(* ----------------- Test Cases ----------------- *)
 
 let assert_error expr =
 	try
