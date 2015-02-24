@@ -118,6 +118,6 @@ assert_error(UnOp (OpIsZero, App(Fun (("x", T_Bool), Var "x"), Bool true)));;
 assert_error(BinOp (OpPlus, Bool true, Int 123));;
 assert_error(BinOp (OpTimes, Bool true, Int 123));;
 assert_error(Let (("x", If(Bool true, Bool true, Bool true)), App ((Var "x"), Int 0)));;
-typeExpr (Letrec ((("x", T_Fun(T_Int, T_Bool)), If(App(Var "x", Int 0), Bool true, Bool true)), App ((Var "x"), Int 0)));; 
+assert_error(Letrec ((("x", T_Fun(T_Int, T_Bool)), If(App(Var "x", Int 0), Bool true, Bool true)), App ((Var "x"), Int 0)));;
 
 assert(typeExpr (Let (("f1", Bool true), Let (("f1", Int 1), (Var "f1")))) = T_Int);;
