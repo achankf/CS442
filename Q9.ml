@@ -63,8 +63,10 @@ let typeExpr expr =
 				else typeExprHelper inExpr ((fName, fType) :: env)
 		| Var x ->
 				try
+(*
 					printList env;
 					Printf.printf "Looking for %s\n" x;
+*)
 					List.assoc x env
 				with
 					| Not_found -> 
