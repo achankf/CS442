@@ -1,5 +1,3 @@
-open List;;
-
 (* Q11 : basic type inference *)
 
 type myType = T_Int | T_Bool | T_Fun of myType * myType | T_Var of int
@@ -30,7 +28,10 @@ let rec subSingle sub t =
 		| T_Int -> T_Int
 		| T_Bool -> T_Bool
 		| T_Fun (t1, t2) -> T_Fun(subSingle sub t1, subSingle sub t2)
-		| T_Var i ->  assoc (T_Var i) sub
+		| T_Var i ->
+			try
+				List.assoc i sub
+			with Not_found -> t
 ;;
 
 (* 
@@ -38,42 +39,110 @@ Returns a funtor which excepts a context (Gamma) and apply the substitution to
 the context, i.e. signma Gamma.
 *)
 let subContext sub =
-	map
-	(fun var_type_pair ->
-		let (var, varType) = var_type_pair in
-		(var, subSingle sub varType)
+	List.map
+	(fun typ_typExpr_pair ->
+		let (typ, typExpr) = typ_typExpr_pair in
+		(typ, subSingle sub typExpr)
 	)
+;;
+
+let rec is_fv_in i t =
+	match t with
+		| T_Bool -> false
+		| T_Int -> false
+		| T_Var k -> i = k
+		| T_Fun (t1, t2) -> (is_fv_in i t1) || (is_fv_in i t2)
+;;
+
+(* sub1 = sigma, sub2 = gamma *)
+let rec subCompose sub1 sub2 =
+	List.map
+	(fun pair ->
+		let (tv, te) = pair in
+		(tv, subSingle sub1 te)
+	)
+	sub2
+	@
+	List.filter (fun x -> let (dom,_) = x in not (List.mem_assoc dom sub2)) sub1
+;;
+
+let rec unify s t =
+	match s, t with
+		| (T_Bool, T_Bool) -> []
+		| (T_Int, T_Int) -> []
+		| (T_Var i, _) -> if is_fv_in i t then raise (Fail "circular") else [(i,t)]
+		| (_, T_Var i) -> if is_fv_in i s then raise (Fail "circular") else [(i,s)]
+		| (T_Fun (s1, s2), T_Fun (t1, t2)) ->
+				let sub1 = unify s1 t1 in
+				let sub2 = unify (subSingle sub1 s2) (subSingle sub1 t2) in
+				subCompose sub2 sub1
+		| _ -> raise (Fail "mismatch")
 ;;
 
 let rec typeExprHelper expr context =
 	match expr with
 		| Int _ -> (T_Int, [])
 		| Bool _ -> (T_Bool, [])
-		| Var name -> (assoc name context, [])
+		| Var name ->
+				(try
+					(List.assoc name context, [])
+				with Not_found -> raise (Fail "unbound"))
 		| Fun (varName, fexpr) ->
 			let fresh = freshTVar() in
 			let (fType, sub) = typeExprHelper fexpr ((varName, fresh) :: context) in
-			(T_Fun (fresh, fType), sub)
+			(T_Fun (subSingle sub fresh, fType), sub)
 		| App (f, x) ->
 			let (fType, sub1) = typeExprHelper f context in
-			let context_sub1 = subContext sub1 context in
-			let (xType, sub2) = typeExprHelper x context in
-			(fType, [])
+			let (xType, sub2) = typeExprHelper x (subContext sub1 context) in
+			let fresh = freshTVar() in
+			let uleft = subSingle sub2 fType in
+			let uright = T_Fun (xType, fresh) in
+			let sub3 = unify uleft uright in
+			let sub321 = subCompose sub3 (subCompose sub2 sub1) in
+			(subSingle sub3 fresh, sub321)
 ;;
 
-let rec unify t1 t2 =
-	[]
-;;
+(*
+#trace typeExprHelper
+#trace unify
+#trace subSingle
+#trace is_fv_in
+*)
 
 let typeExpr expr =
 	resetTVar(); (* reset the counter for the second use *)
-	typeExprHelper expr [];;
+	let (t, _) = typeExprHelper expr [] in
+	t
+;;
 
-assert(typeExpr (Int 123) = (T_Int, []));;
-assert(typeExpr (Fun ("x", Int 123)) = (T_Fun (T_Var 1, T_Int), []));;
-assert(typeExpr (Fun ("x", Var "x")) = (T_Fun (T_Var 1, T_Var 1), []));;
-assert(typeExpr (Fun ("x", Bool true)) = (T_Fun (T_Var 1, T_Bool), []));;
-assert(typeExpr (Fun ("x", Fun ("y", Var "y"))) = (T_Fun (T_Var 1, T_Fun (T_Var 2, T_Var 2)), []));;
-assert(typeExpr (Fun ("x", Fun ("y", Var "x"))) = ((T_Fun (T_Var 1, T_Fun (T_Var 2, T_Var 1)),[])));;
+(* ---------------------- Test cases ---------------------- *)
 
-typeExpr (App (Fun ("x", Var "x"), Int 3));;
+assert(typeExpr (Int 123) = T_Int);;
+assert(typeExpr (Fun ("x", Int 123)) = T_Fun (T_Var 1, T_Int));;
+assert(typeExpr (Fun ("x", Var "x")) = T_Fun (T_Var 1, T_Var 1));;
+assert(typeExpr (Fun ("x", Bool true)) = T_Fun (T_Var 1, T_Bool));;
+assert(typeExpr (Fun ("x", Fun ("y", Var "y"))) = T_Fun (T_Var 1, T_Fun (T_Var 2, T_Var 2)));;
+assert(typeExpr (Fun ("x", Fun ("y", Var "x"))) = T_Fun (T_Var 1, T_Fun (T_Var 2, T_Var 1)));;
+assert(typeExpr (App (Fun ("x", Var "x"), Int 3)) = T_Int);;
+assert(typeExpr (App (Fun ("x", Bool true), Int 3)) = T_Bool);;
+assert(typeExpr (App (Fun ("x", Var "x"), Fun ("x", Var "x"))) = T_Fun (T_Var 2, T_Var 2));;
+assert(typeExpr (App (Fun ("x", Var "x"), App (Fun ("v", Var "v"), Int 123))) = T_Int);
+assert(typeExpr (App (Fun ("x", Var "x"), App (Fun ("v", Fun ("x", Var "x")), Int 123))) = T_Fun (T_Var 3, T_Var 3));;
+assert(typeExpr (App (Fun ("x", Fun ("y", Var "x")), Int 123)) = T_Fun (T_Var 2, T_Int));;
+assert (typeExpr (App (Fun ("x", App (Var "x", Int 123)), Fun ("y", Var "y"))) = T_Int);;
+
+let assert_fail expr reason =
+	try
+		let impossible = typeExpr expr
+		in assert (impossible != impossible)  (* UNREACHABLE *)
+	with
+		| Fail cause -> assert(cause = reason)
+;;
+
+let assert_unbound expr = assert_fail expr "unbound";;
+let assert_circular expr = assert_fail expr "circular";;
+
+assert_unbound (Fun ("x", Var "y"));;
+assert_unbound (App (Fun ("x", Var "x"), App (Fun ("v", Var "x"), Int 123)));
+
+assert_circular (Fun ("x", App (Var "x", Var "x")));;
