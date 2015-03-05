@@ -129,7 +129,11 @@ assert(typeExpr (App (Fun ("x", Var "x"), Fun ("x", Var "x"))) = T_Fun (T_Var 2,
 assert(typeExpr (App (Fun ("x", Var "x"), App (Fun ("v", Var "v"), Int 123))) = T_Int);
 assert(typeExpr (App (Fun ("x", Var "x"), App (Fun ("v", Fun ("x", Var "x")), Int 123))) = T_Fun (T_Var 3, T_Var 3));;
 assert(typeExpr (App (Fun ("x", Fun ("y", Var "x")), Int 123)) = T_Fun (T_Var 2, T_Int));;
-assert (typeExpr (App (Fun ("x", App (Var "x", Int 123)), Fun ("y", Var "y"))) = T_Int);;
+assert(typeExpr (App (Fun ("x", App (Var "x", Int 123)), Fun ("y", Var "y"))) = T_Int);;
+assert(typeExpr (App (Fun ("x", App (Var "x", Int 123)), Fun ("y", Bool true))) = T_Bool);;
+assert(typeExpr (App (Fun ("x", App (Var "x",  Fun ("y", Bool true))), Fun ("y", Bool true))) = T_Bool);;
+assert(typeExpr (App (Fun ("x", App (Var "x",  Fun ("z", Bool true))), Fun ("y", Var "y"))) = T_Fun (T_Var 2, T_Bool));;
+assert(typeExpr (Fun ("y", Fun ("x", App (Var "x", Var "y")))) = T_Fun (T_Var 1, T_Fun (T_Fun (T_Var 1, T_Var 3), T_Var 3)));;
 
 let assert_fail expr reason =
 	try
@@ -141,8 +145,15 @@ let assert_fail expr reason =
 
 let assert_unbound expr = assert_fail expr "unbound";;
 let assert_circular expr = assert_fail expr "circular";;
+let assert_mismatch expr = assert_fail expr "mismatch";;
+
+assert_mismatch (App (Int 3, Int 3));;
+assert_mismatch (App ((App (Fun ("x", Var "x"), Int 3)), Int 3));;
+assert_mismatch(Fun ("x", App (App (Fun ("y", Var "y") , Int 3), Var "x")));;
 
 assert_unbound (Fun ("x", Var "y"));;
 assert_unbound (App (Fun ("x", Var "x"), App (Fun ("v", Var "x"), Int 123)));
 
 assert_circular (Fun ("x", App (Var "x", Var "x")));;
+assert_circular (Fun ("x", App (App (Var "x", Int 3), Var "x")));;
+assert_circular (Fun ("x", App (App (Fun ("y", Var "y") , Var "x"), Var "x")));;
