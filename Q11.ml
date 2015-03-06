@@ -46,12 +46,12 @@ let subContext sub =
 	)
 ;;
 
-let rec is_fv_in i t =
+let rec occurs i t =
 	match t with
 		| T_Bool -> false
 		| T_Int -> false
 		| T_Var k -> i = k
-		| T_Fun (t1, t2) -> (is_fv_in i t1) || (is_fv_in i t2)
+		| T_Fun (t1, t2) -> (occurs i t1) || (occurs i t2)
 ;;
 
 (* sub1 = sigma, sub2 = gamma *)
@@ -70,8 +70,9 @@ let rec unify s t =
 	match s, t with
 		| (T_Bool, T_Bool) -> []
 		| (T_Int, T_Int) -> []
-		| (T_Var i, _) -> if is_fv_in i t then raise (Fail "circular") else [(i,t)]
-		| (_, T_Var i) -> if is_fv_in i s then raise (Fail "circular") else [(i,s)]
+		| (T_Var i, T_Var j) -> if i = j then [] else [(i, t)]
+		| (T_Var i, _) -> if occurs i t then raise (Fail "circular") else [(i,t)]
+		| (_, T_Var i) -> if occurs i s then raise (Fail "circular") else [(i,s)]
 		| (T_Fun (s1, s2), T_Fun (t1, t2)) ->
 				let sub1 = unify s1 t1 in
 				let sub2 = unify (subSingle sub1 s2) (subSingle sub1 t2) in
@@ -106,7 +107,7 @@ let rec typeExprHelper expr context =
 #trace typeExprHelper
 #trace unify
 #trace subSingle
-#trace is_fv_in
+#trace occurs
 *)
 
 let typeExpr expr =
