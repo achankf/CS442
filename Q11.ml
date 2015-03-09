@@ -71,8 +71,8 @@ let rec unify s t =
 		| (T_Bool, T_Bool) -> []
 		| (T_Int, T_Int) -> []
 		| (T_Var i, T_Var j) -> if i = j then [] else [(i, t)]
-		| (T_Var i, _) -> if occurs i t then raise (Fail "circular") else [(i,t)]
-		| (_, T_Var i) -> if occurs i s then raise (Fail "circular") else [(i,s)]
+		| (T_Var i, _) -> if occurs i t then raise (Fail "circularity") else [(i,t)]
+		| (_, T_Var i) -> if occurs i s then raise (Fail "circularity") else [(i,s)]
 		| (T_Fun (s1, s2), T_Fun (t1, t2)) ->
 				let sub1 = unify s1 t1 in
 				let sub2 = unify (subSingle sub1 s2) (subSingle sub1 t2) in
@@ -145,7 +145,7 @@ let assert_fail expr reason =
 ;;
 
 let assert_unbound expr = assert_fail expr "unbound";;
-let assert_circular expr = assert_fail expr "circular";;
+let assert_circularity expr = assert_fail expr "circularity";;
 let assert_mismatch expr = assert_fail expr "mismatch";;
 
 assert_mismatch (App (Int 3, Int 3));;
@@ -155,6 +155,6 @@ assert_mismatch(Fun ("x", App (App (Fun ("y", Var "y") , Int 3), Var "x")));;
 assert_unbound (Fun ("x", Var "y"));;
 assert_unbound (App (Fun ("x", Var "x"), App (Fun ("v", Var "x"), Int 123)));
 
-assert_circular (Fun ("x", App (Var "x", Var "x")));;
-assert_circular (Fun ("x", App (App (Var "x", Int 3), Var "x")));;
-assert_circular (Fun ("x", App (App (Fun ("y", Var "y") , Var "x"), Var "x")));;
+assert_circularity (Fun ("x", App (Var "x", Var "x")));;
+assert_circularity (Fun ("x", App (App (Var "x", Int 3), Var "x")));;
+assert_circularity (Fun ("x", App (App (Fun ("y", Var "y") , Var "x"), Var "x")));;
